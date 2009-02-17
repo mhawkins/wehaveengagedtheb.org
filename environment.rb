@@ -16,8 +16,9 @@ configure do
                  :search_keywords => ['wilw', 'brentspiner', 'levarburton', 'star trek', 'borg'], # search API keyword
                  :status_length   => 20                        # number of tweets to display
                )
-
-  DataMapper.setup(:default, "sqlite3:///#{File.expand_path(File.dirname(__FILE__))}/#{Sinatra::Base.environment}.db")
+               
+  settings = YAML::load( File.read(File.join( File.dirname(__FILE__), 'config', 'database.yml')) )
+  DataMapper.setup(:default, settings)
 
   # load models
   $LOAD_PATH.unshift("#{File.dirname(__FILE__)}/lib")
