@@ -12,8 +12,8 @@ configure do
   SiteConfig = OpenStruct.new(
                  :title           => 'We have engaged the borg',       # title of application
                  :author          => 'reillyhawk',                 # your twitter user name for attribution
-                 :url_base        => 'http://localhost:4567/', # base URL for your site
-                 :search_keywords => ['wilw', 'brentspiner', 'levarburton', 'star trek'], # search API keyword
+                 :url_base        => 'http://wehaveengagedtheb.org/', # base URL for your site
+                 :search_keywords => ['wilw', 'brentspiner', 'levarburton', 'star trek', 'borg'], # search API keyword
                  :status_length   => 20                        # number of tweets to display
                )
 
