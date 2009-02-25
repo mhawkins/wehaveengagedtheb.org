@@ -13,7 +13,7 @@ configure do
                  :title           => 'we have engaged the borg',       # title of application
                  :author          => 'reillyhawk',                 # your twitter user name for attribution
                  :url_base        => 'http://wehaveengagedtheb.org/', # base URL for your site
-                 :search_keywords => ['wilw', 'brentspiner', 'levarburton', 'star trek', 'borg', 'georgetakei', 'leonardnimoy', 'williamshatner'], # search API keyword
+                 :search_keywords => ['wilw', 'brentspiner', 'levarburton', 'star trek', 'borg', 'georgetakei', 'leonardnimoy', 'williamshatner', 'lewar'], # search API keyword
                  :status_length   => 20                        # number of tweets to display
                )
                
