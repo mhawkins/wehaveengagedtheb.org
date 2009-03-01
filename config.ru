@@ -1,3 +1,4 @@
+$:.unshift File.join(File.dirname(__FILE__), '..', '..', '..', '..', '.gem', 'ruby', '1.8')
 require 'rubygems'
 require 'vendor/rack/lib/rack'
 require 'vendor/sinatra/lib/sinatra'
