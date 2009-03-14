@@ -3,6 +3,7 @@ require 'rubygems'
 require 'vendor/rack/lib/rack'
 require 'vendor/sinatra/lib/sinatra'
 require 'application'
+gem 'dm-core'
 
 set :run, false
 set :environment, :production
