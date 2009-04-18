@@ -2,6 +2,10 @@ require 'sinatra/base'
 
 module Sinatra
   class Default < Base
+
+    # we assume that the first file that requires 'sinatra' is the
+    # app_file. all other path related options are calculated based
+    # on this path by default.
     set :app_file, lambda {
       ignore = [
         /lib\/sinatra.*\.rb$/, # all sinatra code
@@ -17,7 +21,6 @@ module Sinatra
     }.call
 
     set :run, Proc.new { $0 == app_file }
-    set :reload, Proc.new{ app_file? && development? }
 
     if run? && ARGV.any?
       require 'optparse'
@@ -32,10 +35,6 @@ module Sinatra
 end
 
 include Sinatra::Delegator
-
-def helpers(&block)
-  Sinatra::Application.send :class_eval, &block
-end
 
 def mime(ext, type)
   ext = ".#{ext}" unless ext.to_s[0] == ?.

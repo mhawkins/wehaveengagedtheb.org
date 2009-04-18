@@ -47,4 +47,35 @@ describe "ERB Templates" do
     assert ok?
     assert_equal "ERB Layout!\nHello World\n", body
   end
+
+  it "renders erb with blocks" do
+    mock_app {
+      def container
+        @_out_buf << "THIS."
+        yield
+        @_out_buf << "SPARTA!"
+      end
+      def is; "IS." end
+      get '/' do
+        erb '<% container do %> <%= is %> <% end %>'
+      end
+    }
+    get '/'
+    assert ok?
+    assert_equal 'THIS. IS. SPARTA!', body
+  end
+
+  it "can be used in a nested fashion for partials and whatnot" do
+    mock_app {
+      template(:inner) { "<inner><%= 'hi' %></inner>" }
+      template(:outer) { "<outer><%= erb :inner %></outer>" }
+      get '/' do
+        erb :outer
+      end
+    }
+
+    get '/'
+    assert ok?
+    assert_equal '<outer><inner>hi</inner></outer>', body
+  end
 end

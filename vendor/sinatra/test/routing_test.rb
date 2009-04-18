@@ -1,5 +1,10 @@
 require File.dirname(__FILE__) + '/helper'
 
+# Helper method for easy route pattern matching testing
+def route_def(pattern)
+  mock_app { get(pattern) { } }
+end
+
 describe "Routing" do
   %w[get put post delete].each do |verb|
     it "defines #{verb.upcase} request handlers with #{verb}" do
@@ -37,6 +42,27 @@ describe "Routing" do
     }
     get '/bar'
     assert_equal 404, status
+  end
+
+  it 'takes multiple definitions of a route' do
+    mock_app {
+      user_agent(/Foo/)
+      get '/foo' do
+        'foo'
+      end
+
+      get '/foo' do
+        'not foo'
+      end
+    }
+
+    get '/foo', {}, 'HTTP_USER_AGENT' => 'Foo'
+    assert ok?
+    assert_equal 'foo', body
+
+    get '/foo'
+    assert ok?
+    assert_equal 'not foo', body
   end
 
   it "exposes params with indifferent hash" do
@@ -134,6 +160,64 @@ describe "Routing" do
     assert ok?
   end
 
+  it "matches a dot ('.') as part of a named param" do
+    mock_app {
+      get '/:foo/:bar' do
+        params[:foo]
+      end
+    }
+
+    get '/user@example.com/name'
+    assert_equal 200, response.status
+    assert_equal 'user@example.com', body
+  end
+
+  it "matches a literal dot ('.') outside of named params" do
+    mock_app {
+      get '/:file.:ext' do
+        assert_equal 'pony', params[:file]
+        assert_equal 'jpg', params[:ext]
+        'right on'
+      end
+    }
+
+    get '/pony.jpg'
+    assert_equal 200, response.status
+    assert_equal 'right on', body
+  end
+
+  it "literally matches . in paths" do
+    route_def '/test.bar'
+
+    get '/test.bar'
+    assert ok?
+    get 'test0bar'
+    assert not_found?
+  end
+
+  it "literally matches $ in paths" do
+    route_def '/test$/'
+
+    get '/test$/'
+    assert ok?
+  end
+
+  it "literally matches + in paths" do
+    route_def '/te+st/'
+
+    get '/te%2Bst/'
+    assert ok?
+    get '/teeeeeeest/'
+    assert not_found?
+  end
+
+  it "literally matches () in paths" do
+    route_def '/test(bar)/'
+
+    get '/test(bar)/'
+    assert ok?
+  end
+
   it "supports basic nested params" do
     mock_app {
       get '/hi' do
@@ -186,7 +270,7 @@ describe "Routing" do
         'looks good'
       end
     }
-    get "/foo?#{param_string(input)}"
+    get "/foo?#{build_query(input)}"
     assert ok?
     assert_equal 'looks good', body
   end
@@ -206,7 +290,7 @@ describe "Routing" do
     assert_equal 'looks good', body
   end
 
-  it "supports paths that include spaces" do
+  it "matches paths that include spaces encoded with %20" do
     mock_app {
       get '/path with spaces' do
         'looks good'
@@ -214,6 +298,18 @@ describe "Routing" do
     }
 
     get '/path%20with%20spaces'
+    assert ok?
+    assert_equal 'looks good', body
+  end
+
+  it "matches paths that include spaces encoded with +" do
+    mock_app {
+      get '/path with spaces' do
+        'looks good'
+      end
+    }
+
+    get '/path+with+spaces'
     assert ok?
     assert_equal 'looks good', body
   end
@@ -254,6 +350,11 @@ describe "Routing" do
     get '/foorooomma/baf'
     assert ok?
     assert_equal 'right on', body
+  end
+
+  it 'raises a TypeError when pattern is not a String or Regexp' do
+    @app = mock_app
+    assert_raise(TypeError) { @app.get(42){} }
   end
 
   it "returns response immediately on halt" do
@@ -441,5 +542,171 @@ describe "Routing" do
       assert_equal type, body
       assert_equal type, response.headers['Content-Type']
     end
+  end
+
+  it 'degrades gracefully when optional accept header is not provided' do
+    mock_app {
+      get '/', :provides => :xml do
+        request.env['HTTP_ACCEPT']
+      end
+      get '/' do
+        'default'
+      end
+    }
+    get '/'
+    assert ok?
+    assert_equal 'default', body
+  end
+
+  it 'passes a single url param as block parameters when one param is specified' do
+    mock_app {
+      get '/:foo' do |foo|
+        assert_equal 'bar', foo
+      end
+    }
+
+    get '/bar'
+    assert ok?
+  end
+
+  it 'passes multiple params as block parameters when many are specified' do
+    mock_app {
+      get '/:foo/:bar/:baz' do |foo, bar, baz|
+        assert_equal 'abc', foo
+        assert_equal 'def', bar
+        assert_equal 'ghi', baz
+      end
+    }
+
+    get '/abc/def/ghi'
+    assert ok?
+  end
+
+  it 'passes regular expression captures as block parameters' do
+    mock_app {
+      get(/^\/fo(.*)\/ba(.*)/) do |foo, bar|
+        assert_equal 'orooomma', foo
+        assert_equal 'f', bar
+        'looks good'
+      end
+    }
+
+    get '/foorooomma/baf'
+    assert ok?
+    assert_equal 'looks good', body
+  end
+
+  it "supports mixing multiple splat params like /*/foo/*/* as block parameters" do
+    mock_app {
+      get '/*/foo/*/*' do |foo, bar, baz|
+        assert_equal 'bar', foo
+        assert_equal 'bling', bar
+        assert_equal 'baz/boom', baz
+        'looks good'
+      end
+    }
+
+    get '/bar/foo/bling/baz/boom'
+    assert ok?
+    assert_equal 'looks good', body
+  end
+
+  it 'raises an ArgumentError with block arity > 1 and too many values' do
+    mock_app {
+      get '/:foo/:bar/:baz' do |foo, bar|
+        'quux'
+      end
+    }
+
+    assert_raise(ArgumentError) { get '/a/b/c' }
+  end
+
+  it 'raises an ArgumentError with block param arity > 1 and too few values' do
+    mock_app {
+      get '/:foo/:bar' do |foo, bar, baz|
+        'quux'
+      end
+    }
+
+    assert_raise(ArgumentError) { get '/a/b' }
+  end
+
+  it 'succeeds if no block parameters are specified' do
+    mock_app {
+      get '/:foo/:bar' do
+        'quux'
+      end
+    }
+
+    get '/a/b'
+    assert ok?
+    assert_equal 'quux', body
+  end
+
+  it 'passes all params with block param arity -1 (splat args)' do
+    mock_app {
+      get '/:foo/:bar' do |*args|
+        args.join
+      end
+    }
+
+    get '/a/b'
+    assert ok?
+    assert_equal 'ab', body
+  end
+
+  # NOTE Block params behaves differently under 1.8 and 1.9. Under 1.8, block
+  # param arity is lax: declaring a mismatched number of block params results
+  # in a warning. Under 1.9, block param arity is strict: mismatched block
+  # arity raises an ArgumentError.
+
+  if RUBY_VERSION >= '1.9'
+
+    it 'raises an ArgumentError with block param arity 1 and no values' do
+      mock_app {
+        get '/foo' do |foo|
+          'quux'
+        end
+      }
+
+      assert_raise(ArgumentError) { get '/foo' }
+    end
+
+    it 'raises an ArgumentError with block param arity 1 and too many values' do
+      mock_app {
+        get '/:foo/:bar/:baz' do |foo|
+          'quux'
+        end
+      }
+
+      assert_raise(ArgumentError) { get '/a/b/c' }
+    end
+
+  else
+
+    it 'does not raise an ArgumentError with block param arity 1 and no values' do
+      mock_app {
+        get '/foo' do |foo|
+          'quux'
+        end
+      }
+
+      silence_warnings { get '/foo' }
+      assert ok?
+      assert_equal 'quux', body
+    end
+
+    it 'does not raise an ArgumentError with block param arity 1 and too many values' do
+      mock_app {
+        get '/:foo/:bar/:baz' do |foo|
+          'quux'
+        end
+      }
+
+      silence_warnings { get '/a/b/c' }
+      assert ok?
+      assert_equal 'quux', body
+    end
+
   end
 end
