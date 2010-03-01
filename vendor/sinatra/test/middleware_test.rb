@@ -4,7 +4,9 @@ describe "Middleware" do
   before do
     @app = mock_app(Sinatra::Default) {
       get '/*' do
-        response.headers['X-Tests'] = env['test.ran'].join(', ')
+        response.headers['X-Tests'] = env['test.ran'].
+          map { |n| n.split('::').last }.
+          join(', ')
         env['PATH_INFO']
       end
     }
@@ -38,7 +40,7 @@ describe "Middleware" do
     end
   end
 
-  specify "runs in the order defined" do
+  it "runs in the order defined" do
     @app.use UpcaseMiddleware
     @app.use DowncaseMiddleware
     get '/Foo'
@@ -46,7 +48,7 @@ describe "Middleware" do
     assert_equal "UpcaseMiddleware, DowncaseMiddleware", response['X-Tests']
   end
 
-  specify "resets the prebuilt pipeline when new middleware is added" do
+  it "resets the prebuilt pipeline when new middleware is added" do
     @app.use UpcaseMiddleware
     get '/Foo'
     assert_equal "/FOO", body
@@ -54,5 +56,13 @@ describe "Middleware" do
     get '/Foo'
     assert_equal '/foo', body
     assert_equal "UpcaseMiddleware, DowncaseMiddleware", response['X-Tests']
+  end
+
+  it "works when app is used as middleware" do
+    @app.use UpcaseMiddleware
+    @app = @app.new
+    get '/Foo'
+    assert_equal "/FOO", body
+    assert_equal "UpcaseMiddleware", response['X-Tests']
   end
 end

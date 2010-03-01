@@ -93,7 +93,7 @@ context "SendData" do
   end
 
   # Deprecated. send_data is going away.
-  xspecify "should send the data with options" do
+  specify "should send the data with options" do
     get '/' do
       send_data 'asdf', :status => 500
     end
@@ -107,7 +107,8 @@ context "SendData" do
   # Deprecated. The Content-Disposition is no longer handled by sendfile.
   specify "should include a Content-Disposition header" do
     get '/' do
-      send_file File.dirname(__FILE__) + '/public/foo.xml'
+      send_file File.dirname(__FILE__) + '/public/foo.xml',
+        :disposition => 'attachment'
     end
 
     get_it '/'
@@ -115,7 +116,18 @@ context "SendData" do
     should.be.ok
     headers['Content-Disposition'].should.not.be.nil
     headers['Content-Disposition'].should.equal 'attachment; filename="foo.xml"'
-    headers['Content-Transfer-Encoding'].should.equal 'binary'
   end
 
+  specify "should include a Content-Disposition header when :disposition set to attachment" do
+    get '/' do
+      send_file File.dirname(__FILE__) + '/public/foo.xml',
+        :disposition => 'attachment'
+    end
+
+    get_it '/'
+
+    should.be.ok
+    headers['Content-Disposition'].should.not.be.nil
+    headers['Content-Disposition'].should.equal 'attachment; filename="foo.xml"'
+  end
 end

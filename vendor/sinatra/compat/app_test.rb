@@ -8,8 +8,9 @@ context "Sinatra" do
 
   specify "should put all DSL methods on (main)" do
     object = Object.new
-    Sinatra::Application::FORWARD_METHODS.each do |method|
-      object.private_methods.should.include(method)
+    methods = %w[get put post head delete configure template helpers set]
+    methods.each do |method|
+      object.private_methods.map { |m| m.to_sym }.should.include(method.to_sym)
     end
   end
 
@@ -142,25 +143,6 @@ context "Sinatra" do
 
     should.be.ok
     body.should.equal 'Hello!'
-
-  end
-
-  # Deprecated. WTF was going on here? What's the 1 in [:foo, 1] do?
-  xspecify "should set status then call helper with a var" do
-    helpers do
-      def foo
-        'bah!'
-      end
-    end
-
-    get '/set_body' do
-      stop [404, [:foo, 1]]
-    end
-
-    get_it '/set_body'
-
-    should.be.not_found
-    body.should.equal 'bah!'
 
   end
 
