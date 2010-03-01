@@ -3,6 +3,7 @@ require 'rubygems'
 require 'vendor/rack/lib/rack'
 require 'vendor/sinatra/lib/sinatra'
 require 'application'
+Gem.clear_paths
 gem 'dm-core'
 
 set :run, false
