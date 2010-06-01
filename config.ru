@@ -1,4 +1,6 @@
 $:.unshift File.join(File.dirname(__FILE__), '..', '..', '..', '..', '.gem', 'ruby', '1.8')
+ENV['GEM_HOME'] = '/home/reillyhawk/.gem'
+ENV['GEM_PATH'] = '$GEM_HOME:/usr/lib/ruby/gems/1.8'
 require 'rubygems'
 require 'vendor/rack/lib/rack'
 require 'vendor/sinatra/lib/sinatra'
